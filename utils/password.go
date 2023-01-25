@@ -11,14 +11,14 @@ func HashPassword(password string) string {
     return base64.StdEncoding.EncodeToString(salt)
 }
 
-func VerifyPassword(hashedPassword, password string) bool {
+func VerifyPassword(hashedPassword, password string) (bool, error) {
     decodeHash, err := base64.StdEncoding.DecodeString(hashedPassword)
     PanicIfError(err)
 
     err = bcrypt.CompareHashAndPassword(decodeHash, []byte(password))
     if err != nil {
-        return false
+        return false, err
     }
 
-    return true
+    return true, nil
 }

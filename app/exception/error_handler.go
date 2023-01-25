@@ -29,7 +29,7 @@ func validationErrors(writer http.ResponseWriter, request *http.Request, err int
         webResponse := responses.WebResponse{
             Code: http.StatusBadRequest,
             Status: "Validation Error",
-            Data: exception.Error()
+            Data: exception.Error(),
         }
 
         utils.WriteToResponseBody(writer, webResponse)
@@ -69,5 +69,5 @@ func internalServerError(writer http.ResponseWriter, request *http.Request, err 
         Data: err,
     }
 
-    helper.WriteToResponseBody(writer, webResponse)
+    utils.WriteToResponseBody(writer, webResponse)
 }

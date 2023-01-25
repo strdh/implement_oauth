@@ -1,8 +1,9 @@
 package models
 
 import (
+    "fmt"
     "context"
-    // "errors"
+    "errors"
     "database/sql"
     "exercise/gooauth/utils"
 )
@@ -42,6 +43,9 @@ func (model *UserModel) Create(ctx context.Context, user User) User {
 }
 
 func (model *UserModel) FindByUsername(ctx context.Context, username string) (User, error) {
+    tx, err := model.DB.Begin()
+    utils.PanicIfError(err)
+    defer utils.CommitOrRollback(tx)
     sql := "SELECT * FROM users WHERE username = ?"
     rows, err := tx.QueryContext(ctx, sql, username)
     utils.PanicIfError(err)
@@ -54,5 +58,5 @@ func (model *UserModel) FindByUsername(ctx context.Context, username string) (Us
         return user, nil
     }
 
-    return user, errors.New("User not found")
+    return user, errors.New(fmt.Sprintf("User with username %s not found", username))
 }

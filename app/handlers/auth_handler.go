@@ -8,6 +8,7 @@ import (
     "exercise/gooauth/app/web/responses"
     "exercise/gooauth/app/models"
     "exercise/gooauth/utils"
+    "exercise/gooauth/app/exception"
 )
 
 type AuthHandler struct {
@@ -23,16 +24,17 @@ func NewAuthHandler(userModel *models.UserModel, validator *validator.Validate) 
 }
 
 func (handler *AuthHandler) Register(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
-    userCrateRequest := requests.UserCreateRequest{}
-    utils.ReadFromRequestBody(request, &userCrateRequest)
+    userCreateRequest := requests.UserCreateRequest{}
+    utils.ReadFromRequestBody(request, &userCreateRequest)
 
-    err := handler.Validate.Struct(userCrateRequest)
+    err := handler.Validate.Struct(userCreateRequest)
     utils.PanicIfError(err)
+    
     user := models.User{
-        FullName: userCrateRequest.FullName,
-        Email: userCrateRequest.Email,
-        Username: userCrateRequest.Username,
-        Password: utils.HashPassword(userCrateRequest.Password),
+        FullName: userCreateRequest.FullName,
+        Email: userCreateRequest.Email,
+        Username: userCreateRequest.Username,
+        Password: utils.HashPassword(userCreateRequest.Password),
     }
 
     userResponse := handler.UserModel.Create(request.Context(), user)
@@ -53,19 +55,18 @@ func (handler *AuthHandler) Login(writer http.ResponseWriter, request *http.Requ
     utils.PanicIfError(err)
 
     userResponse, err := handler.UserModel.FindByUsername(request.Context(), userLoginRequest.Username)
-    utils.PanicIfError(err)
-
-    if err != nil || !result {
+    if err != nil {
         panic(exception.NewNotFoundError(err.Error()))
     }
 
-    if !utils.VerifyPassword(userLoginRequest.Password, userResponse.Password) {
+    result, err := utils.VerifyPassword(userResponse.Password, userLoginRequest.Password)
+    if err != nil || !result {
         panic(exception.NewNotFoundError(err.Error()))
     }
 
     dataResponse := map[string]interface{}{
         "username": userResponse.Username,
-        "token": utils.GenerateToken(userResponse.Username),
+        "token": utils.GenerateToken(userResponse.Id, userResponse.Username),
     }
 
     webResponse := responses.WebResponse{

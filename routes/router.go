@@ -7,6 +7,7 @@ import (
     "exercise/gooauth/app/handlers"
     "exercise/gooauth/app/models"
     "exercise/gooauth/config"
+    "exercise/gooauth/app/exception"
 )
 
 func NewRouter() *httprouter.Router {
@@ -19,6 +20,8 @@ func NewRouter() *httprouter.Router {
     router := httprouter.New()
     router.POST("/api/register", authHandler.Register)
     router.POST("/api/login", authHandler.Login)
+
+    router.PanicHandler = exception.ErrorHandler
 
     return router
 }
