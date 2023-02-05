@@ -37,7 +37,9 @@ func (handler *AuthHandler) Register(writer http.ResponseWriter, request *http.R
         Password: utils.HashPassword(userCreateRequest.Password),
     }
 
-    userResponse := handler.UserModel.Create(request.Context(), user)
+    userKey := utils.GenerateKeyToken()
+
+    userResponse := handler.UserModel.Create(request.Context(), user, userKey)
     webResponse := responses.WebResponse{
         Code: http.StatusOK,
         Status: "User created successfully",
@@ -54,7 +56,7 @@ func (handler *AuthHandler) Login(writer http.ResponseWriter, request *http.Requ
     err := handler.Validate.Struct(userLoginRequest)
     utils.PanicIfError(err)
 
-    userResponse, err := handler.UserModel.FindByUsername(request.Context(), userLoginRequest.Username)
+    userResponse, userKey, err := handler.UserModel.FindByUsername(request.Context(), userLoginRequest.Username)
     if err != nil {
         panic(exception.NewNotFoundError(err.Error()))
     }
@@ -66,7 +68,7 @@ func (handler *AuthHandler) Login(writer http.ResponseWriter, request *http.Requ
 
     dataResponse := map[string]interface{}{
         "username": userResponse.Username,
-        "token": utils.GenerateToken(userResponse.Id, userResponse.Username),
+        "token": utils.GenerateToken(userResponse.Id, userResponse.Username, userKey),
     }
 
     webResponse := responses.WebResponse{
