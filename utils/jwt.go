@@ -21,7 +21,7 @@ func GenerateKeyToken() string {
     _, err := rand.Read(bytes)
     PanicIfError(err)
 
-    ciphertext := aesEncrypt(bytes, AESKEY)
+    ciphertext := AesEncrypt(bytes, AESKEY)
     return base64.StdEncoding.EncodeToString(ciphertext)
 }
 

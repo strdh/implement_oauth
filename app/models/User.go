@@ -52,7 +52,7 @@ func (model *UserModel) Create(ctx context.Context, user User, tokenKey string) 
     return user
 }
 
-func (model *UserModel) FindByUsername(ctx context.Context, username string) (User, string, error) {
+func (model *UserModel) FindByUsername(ctx context.Context, username string) (User, error) {
     tx, err := model.DB.Begin()
     utils.PanicIfError(err)
     defer utils.CommitOrRollback(tx)
@@ -65,19 +65,29 @@ func (model *UserModel) FindByUsername(ctx context.Context, username string) (Us
     if rows.Next() {
         err := rows.Scan(&user.Id, &user.FullName, &user.Email, &user.Username, &user.Password)
         utils.PanicIfError(err)
-
-        sql2 := "SELECT * FROM users_key WHERE user_id = ?"
-        rows2, err := tx.QueryContext(ctx, sql2, user.Id)
-        utils.PanicIfError(err)
-
-        userKey := UserKey{}
-        if rows2.Next() {
-            err := rows2.Scan(&userKey.Id, &userKey.UserId, &userKey.Key)
-            utils.PanicIfError(err)
-        }
-
-        return user, userKey.Key, nil
+        
+        return user, nil
     }
 
-    return user, "", errors.New(fmt.Sprintf("User with username %s not found", username))
+    return user, errors.New(fmt.Sprintf("User with username %s not found", username))
+}
+
+func (model *UserModel) FindUserKey(ctx context.Context, userId int) (string, error) {
+    tx, err := model.DB.Begin()
+    utils.PanicIfError(err)
+    defer utils.CommitOrRollback(tx)
+
+    sql := "SELECT * FROM users_key WHERE user_id = ?"
+    rows, err := tx.QueryContext(ctx, sql, userId)
+    utils.PanicIfError(err)
+
+    userKey := UserKey{}
+    if rows.Next() {
+        err := rows.Scan(&userKey.Id, &userKey.UserId, &userKey.Key)
+        utils.PanicIfError(err)
+
+        return userKey.Key, nil
+    }
+
+    return "", errors.New(fmt.Sprintf("User with id %d not found", userId))
 }

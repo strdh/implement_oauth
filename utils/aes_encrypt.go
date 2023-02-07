@@ -6,7 +6,7 @@ import (
     "crypto/rand"
 )
 
-func aesEncrypt(plaintext []byte, key []byte) []byte {
+func AesEncrypt(plaintext []byte, key []byte) []byte {
     block, err := aes.NewCipher(key)
     PanicIfError(err)
 
@@ -21,7 +21,7 @@ func aesEncrypt(plaintext []byte, key []byte) []byte {
     return ciphertext
 }
 
-func aesDecrypt(ciphertext []byte, key []byte) []byte {
+func AesDecrypt(ciphertext []byte, key []byte) ([]byte, error) {
     block, err := aes.NewCipher(key)
     PanicIfError(err)
 
@@ -32,7 +32,9 @@ func aesDecrypt(ciphertext []byte, key []byte) []byte {
     nonce, ciphertext := ciphertext[:nonceSize], ciphertext[nonceSize:]
 
     plaintext, err := aesGCM.Open(nil, nonce, ciphertext, nil)
-    PanicIfError(err)
+    if err != nil {
+        return nil, err
+    }
 
-    return plaintext
+    return plaintext, nil
 }

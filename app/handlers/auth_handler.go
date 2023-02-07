@@ -1,7 +1,10 @@
 package handlers
 
 import (
+    // "fmt"
+    "os"
     "net/http"
+    "encoding/base64"
     "github.com/julienschmidt/httprouter"
     "github.com/go-playground/validator/v10"
     "exercise/gooauth/app/web/requests"
@@ -56,7 +59,7 @@ func (handler *AuthHandler) Login(writer http.ResponseWriter, request *http.Requ
     err := handler.Validate.Struct(userLoginRequest)
     utils.PanicIfError(err)
 
-    userResponse, userKey, err := handler.UserModel.FindByUsername(request.Context(), userLoginRequest.Username)
+    userResponse, err := handler.UserModel.FindByUsername(request.Context(), userLoginRequest.Username)
     if err != nil {
         panic(exception.NewNotFoundError(err.Error()))
     }
@@ -66,9 +69,19 @@ func (handler *AuthHandler) Login(writer http.ResponseWriter, request *http.Requ
         panic(exception.NewNotFoundError(err.Error()))
     }
 
+    userKey, err := handler.UserModel.FindUserKey(request.Context(), userResponse.Id)
+    if err != nil {
+        panic(exception.NewNotFoundError(err.Error()))
+    }
+
+    AESKEY := []byte(os.Getenv("AES_KEY"))
+    decodedKey, err := base64.StdEncoding.DecodeString(userKey)
+    finalKey, err := utils.AesDecrypt(decodedKey, AESKEY)
+    utils.PanicIfError(err)
+
     dataResponse := map[string]interface{}{
         "username": userResponse.Username,
-        "token": utils.GenerateToken(userResponse.Id, userResponse.Username, userKey),
+        "token": utils.GenerateToken(userResponse.Id, userResponse.Username, base64.StdEncoding.EncodeToString(finalKey)),
     }
 
     webResponse := responses.WebResponse{
